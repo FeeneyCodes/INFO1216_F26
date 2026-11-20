@@ -198,27 +198,30 @@ int main(int argc, char* argv[])
 	int lineOffset = 3;
 	int colOffset = 14;
 
-#define ESC "\x1b"
-#define CSI "\x1b["
 
 	for (int row = 0; row < pMazeExplorer->getNumberOfRows_Length(); row++)
 	{
 		for (int col = 0; col < pMazeExplorer->getNumberOfColumns_Width(); col++)
 		{
-			std::stringstream ssTermSeq;
-			ssTermSeq << CSI << (row+ lineOffset) << ';' << (col+ colOffset) << 'H';
-			printf(ssTermSeq.str().c_str());
-
+			pVT->moveCursorToXY(col, row);
 			cGridMazeExplorer::eCellType cellType = pMazeExplorer->getGridCellType(row, col);
-			char cellChar = pMazeExplorer->getCellTypeAsChar(cellType);
-			printf("%c", cellChar);
+			//char cellChar = pMazeExplorer->getCellTypeAsChar(cellType);
+			//pVT->printCharAtXY(cellChar, col, row);
+			if (cellType == cGridMazeExplorer::WALL)
+			{
+				pVT->printDECLineSymbol(cVT100TerminalConsole::CHECKERBOARD_STIPPLE_SHADE);
+			}
+			else
+			{
+				printf(" ");
+			}
 		}
 	}
 
 	pVT->restoreTerminalMode();
 	// **********************************************************************
 
-	
+	return 0;
 	
 	std::vector<cGridMazeExplorer::sGridLocation> vecPath;
 	//bool bSolvedMaze = pMazeExplorer->CreatePath( vecExits[0], vecExits[1], vecPath );

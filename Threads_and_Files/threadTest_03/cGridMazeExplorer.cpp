@@ -3,6 +3,8 @@
 #include <sstream>
 #include <iostream>
 
+#include "cVT100TerminalConsole.h"
+
 cGridMazeExplorer::cGridMazeExplorer(unsigned long seed)
 {
 	this->m_pRandom = new cMersenneTwister(seed);
@@ -481,16 +483,18 @@ bool cGridMazeExplorer::SolveMazeRandomPath(
 	return false;
 }
 
-bool cGridMazeExplorer::SolveMazeRecursive(
+bool cGridMazeExplorer::SolveMazeDeadEndFilling(
 	sGridLocation start, sGridLocation end,
+	int& numberOfDeadEndsFilled,
 	std::vector<sGridLocation>& vecPath)
 {
-	return this->SolveMazeRecursive(start.row, start.col, end.row, end.col, vecPath);
+	return this->SolveMazeDeadEndFilling(start.row, start.col, end.row, end.col, numberOfDeadEndsFilled, vecPath);
 }
 
 
-bool cGridMazeExplorer::SolveMazeRecursive(
+bool cGridMazeExplorer::SolveMazeDeadEndFilling(
 	int start_row, int start_col, int end_row, int end_col,
+	int& numberOfDeadEndsFilled,
 	std::vector<sGridLocation>& vecPath)
 {
 	// Are start and end valid?
@@ -500,95 +504,159 @@ bool cGridMazeExplorer::SolveMazeRecursive(
 		return false;
 	}
 
-	// Make a copy of the maze, indicating what cells have been visited
-	// (mark any WALL as "visited" to prevent being picked)
-	std::vector<std::vector<bool>> vecMazeCellVisited;
-	vecMazeCellVisited.reserve(this->m_NumRows_Height);
+	// Make a copy of the maze so we know what's a wall and what's not
+	std::vector<std::vector<bool>> vecMazeAreWalls;
+	vecMazeAreWalls.reserve(this->m_NumRows_Height);
 
 	for (int rowIndex = 0; rowIndex != this->m_NumRows_Height; rowIndex++)
 	{
 		// Add an empty row
-		vecMazeCellVisited.push_back(std::vector<bool>());
-		vecMazeCellVisited[rowIndex].reserve(this->m_NumColumns_Width);
+		vecMazeAreWalls.push_back(std::vector<bool>());
+		vecMazeAreWalls[rowIndex].reserve(this->m_NumColumns_Width);
 
 		for (int colIndex = 0; colIndex != this->m_NumColumns_Width; colIndex++)
 		{
 			if (this->m_vecMaze[rowIndex][colIndex] == WALL)
 			{
-				vecMazeCellVisited[rowIndex].push_back(true);
+				vecMazeAreWalls[rowIndex].push_back(true);
 			}
 			else
 			{
-				vecMazeCellVisited[rowIndex].push_back(false);
+				vecMazeAreWalls[rowIndex].push_back(false);
 			}
 		}
-
 	}//for (int rowIndex
 
+
+	// Keep scaning through the maze looking for dead ends. 
+	bool bKeepScanningForDeadEnds = true;
+	numberOfDeadEndsFilled = 0;
+	while (bKeepScanningForDeadEnds)
+	{
+		// Assume we've found all the dead ends (and filled them)
+		bKeepScanningForDeadEnds = false;
+
+		// These are cells that have only one exit
+		for (int rowIndex = 0; rowIndex != this->m_NumRows_Height; rowIndex++)
+		{
+			for (int colIndex = 0; colIndex != this->m_NumColumns_Width; colIndex++)
+			{
+				if (!vecMazeAreWalls[rowIndex][colIndex])
+				{
+					// It's a floor. Is it a dead end? 
+
+					std::vector<sGridLocation> vecAdjacent;
+
+					vecAdjacent.push_back(sGridLocation(rowIndex - 1, colIndex));	// Up one
+					vecAdjacent.push_back(sGridLocation(rowIndex + 1, colIndex));	// Down one
+					vecAdjacent.push_back(sGridLocation(rowIndex, colIndex - 1)); // Left one
+					vecAdjacent.push_back(sGridLocation(rowIndex, colIndex + 1)); // Rigth one
+
+					// Check to see if these are inside the maze
+					std::vector<sGridLocation> vecAdjacentValid;
+					for (sGridLocation cell : vecAdjacent)
+					{
+						if (this->m_bIsCellInMaze(cell))
+						{
+							// Is it still a floor (hasn't been filled in)?
+							if (!vecMazeAreWalls[cell.row][cell.col])
+							{
+								vecAdjacentValid.push_back(cell);
+							}
+						}
+					}
+
+					// If there is only one adjacent cell, then it's a dead end. 
+					if (vecAdjacentValid.size() == 1)
+					{
+						// It IS a dead end, so fill it
+						vecMazeAreWalls[rowIndex][colIndex] = true;
+						bKeepScanningForDeadEnds = true;
+						numberOfDeadEndsFilled++;
+					}
+
+				}//if (!vecMazeAreWalls[rowIndex][colIndex])
+			}//for (int colIndex
+		}//for (int rowIndex
+	}//while (bKeepScanningForDeadEnds)
+
+	// ********************************************************************************
+	cVT100TerminalConsole* pVT = new cVT100TerminalConsole();
+	pVT->enableVirtualTerminalMode();
+
+	for (int rowIndex = 0; rowIndex < this->m_NumRows_Height; rowIndex++)
+	{
+		for (int colIndex = 0; colIndex < this->m_NumColumns_Width; colIndex++)
+		{
+			if ( ! vecMazeAreWalls[rowIndex][colIndex] )
+			{
+				pVT->moveCursorToXY(colIndex, rowIndex);
+				pVT->setTextForeground(cVT100TerminalConsole::GREEN, false);
+				pVT->printBlackHappyFace();
+				pVT->setTextForeground_Default();
+			}
+			else
+			{
+				pVT->moveCursorToXY(colIndex, rowIndex);
+				pVT->setTextForeground(cVT100TerminalConsole::CYAN, false);
+				pVT->printDECLineSymbol(cVT100TerminalConsole::CHECKERBOARD_STIPPLE_SHADE);
+				pVT->setTextForeground_Default();
+			}
+		}
+	}//for (int rowIndex
+
+	pVT->restoreTerminalMode();
+	delete pVT;
+	// ********************************************************************************
 
 	// Clear the path
 	vecPath.clear();
 
-	// Add starting location
-	vecMazeCellVisited[start_row][start_col] = true;		// Visited
-	vecPath.push_back(sGridLocation(start_row, start_col));
+	return true;
+}
 
-	// For each cell, pick a direction that hasn't been taken
-	// If we end up in a dead end, pop back 
-	int curRow = start_row;
-	int curCol = start_col;
-
-	bool bKeepSolving = true;
-
-	while (bKeepSolving)
+// (Used by: SolveMazeDeadEndFilling)
+bool cGridMazeExplorer::m_bIsCellADeadEnd(sGridLocation cellRowCol)
+{
+	if (!this->m_bIsCellInMaze(cellRowCol))
 	{
-		// Can we move to an adjacent cell?
-		if (this->m_bFindValidNextCell(curRow, curCol, vecMazeCellVisited))
-		{
-			// Yes, add this cell to the path...
-			vecPath.push_back(sGridLocation(curRow, curCol));
-			// ...and mark it as visited
-			vecMazeCellVisited[curRow][curCol] = true;
+		return false;
+	}
+	// Is this a wall cell
+	if (this->getGridCellType(cellRowCol) == WALL)
+	{
+		return false;
+	}
 
-			// Is this the exit? 
-			if (curRow == end_row && curCol == end_col)
-			{
-				// Yup, we are at the exit
-				return true;
-			}
+	// Add the four (untested) possible future locations
+	std::vector<sGridLocation> vecAdjacent;
+
+	vecAdjacent.push_back(sGridLocation(cellRowCol.row - 1, cellRowCol.col));	// Up one
+	vecAdjacent.push_back(sGridLocation(cellRowCol.row + 1, cellRowCol.col));	// Down one
+	vecAdjacent.push_back(sGridLocation(cellRowCol.row, cellRowCol.col - 1)); // Left one
+	vecAdjacent.push_back(sGridLocation(cellRowCol.row, cellRowCol.col + 1)); // Rigth one
+
+	// Check to see if these are inside the maze
+	std::vector<sGridLocation> vecAdjacentValid;
+	for (sGridLocation cell : vecAdjacent)
+	{
+		if (this->m_bIsCellInMaze(cell))
+		{
+			vecAdjacentValid.push_back(cell);
 		}
-		else
-		{
-			// We've hit a dead end.
-			// Pop back the vector until we find a cell where we can move again
-			
-			while ( ! this->m_bFindValidNextCell(curRow, curCol, vecMazeCellVisited) )
-			{
-				// remove that cell on the path (no valid moves from this location)
-				vecPath.pop_back();
+	}
 
-				// If we go right to the begining with no valid options, 
-				//  then we can't solve this maze
-				if (vecPath.empty())
-				{
-					return false;
-				}
-
-				// Update the current location to be the current end of the path vector
-				curRow = vecPath[vecPath.size() - 1].row;
-				curCol = vecPath[vecPath.size() - 1].col;
-			}
-
-		}//if (this->m_bFindValidNextCell
-
-	}//while (bKeepSolving)
-
-
-	// Didn't solve the maze (is there a path?)
+	// If there is only one adjacent cell, then it's a dead end. 
+	if (vecAdjacentValid.size() == 1)
+	{
+		return true;
+	}
+	// It's not a dead end
 	return false;
 }
 
-// (Used by: SolveMazeRecursive)
+
+// (Used by: SolveMazeRecursive and SolveMazeDeadEndFilling)
 bool cGridMazeExplorer::m_bIsCellInMaze(sGridLocation cellRowCol)
 {
 	if (cellRowCol.row < 0 || cellRowCol.col < 0)

@@ -94,13 +94,16 @@ public:
 	                         int &numberOfAttemps,
 	                         int maxNumberOfAttempts = 1000);
 
-	// If there is a path, this will solve it. 
-	// Instead of doinf a random walk, it recursively probes the maze. 
-	bool SolveMazeRecursive(sGridLocation start, sGridLocation end,
-	                        std::vector<sGridLocation>& vecPath);
+	// This fills all the dead ends until there's only either one (or more)
+	//	valid paths through the maze, or there's no valid path.
+	// Returns true if there's a path. 
+	bool SolveMazeDeadEndFilling(sGridLocation start, sGridLocation end,
+	                             int &numberOfDeadEndsFilled, 
+	                             std::vector<sGridLocation>& vecPath);
 
-	bool SolveMazeRecursive(int start_row, int start_col, int end_row, int end_col,
-	                        std::vector<sGridLocation>& vecPath);
+	bool SolveMazeDeadEndFilling(int start_row, int start_col, int end_row, int end_col,
+	                             int& numberOfDeadEndsFilled,
+	                             std::vector<sGridLocation>& vecPath);
 
 
 	// For printing the maze WITH the path
@@ -147,6 +150,9 @@ private:
 	// Used by: SolveMazeRecursive()
 	bool m_bIsCellInMaze(sGridLocation cellRowCol);
 	bool m_bFindValidNextCell(int& row, int& col, std::vector<std::vector<bool>>& vecMazeCellVisited);
+
+	// Used by: SolveMazeDeadEndFilling()
+	bool m_bIsCellADeadEnd(sGridLocation cellRowCol);
 };
 	
 #endif //_cGridMazeTraveller_HG_

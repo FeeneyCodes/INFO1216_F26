@@ -189,14 +189,7 @@ int main(int argc, char* argv[])
 
 	// **********************************************************************
 	cVT100TerminalConsole* pVT = new cVT100TerminalConsole();
-//	std::cout << "enabling virtual terminal" << std::endl;
-	if (pVT->enableVirtualTerminalMode())
-	{
-//		std::cout << "virtual terminal enabled." << std::endl;
-	}
-
-	int lineOffset = 3;
-	int colOffset = 14;
+	pVT->enableVirtualTerminalMode();
 
 
 	for (int row = 0; row < pMazeExplorer->getNumberOfRows_Length(); row++)
@@ -221,7 +214,7 @@ int main(int argc, char* argv[])
 	pVT->restoreTerminalMode();
 	// **********************************************************************
 
-	return 0;
+	
 	
 	std::vector<cGridMazeExplorer::sGridLocation> vecPath;
 	//bool bSolvedMaze = pMazeExplorer->CreatePath( vecExits[0], vecExits[1], vecPath );
@@ -238,7 +231,8 @@ int main(int argc, char* argv[])
 //	                                                       vecPath, numberOfAttempsTaken,
 //	                                                       MAX_NUMBER_OF_ATTEMPTS);
 
-	bool bSolvedMaze = pMazeExplorer->SolveMazeRecursive(vecExits[0], vecExits[1], vecPath);
+	int numberOfDeadEndsFilled = 0;
+	bool bSolvedMaze = pMazeExplorer->SolveMazeDeadEndFilling(vecExits[0], vecExits[1], numberOfDeadEndsFilled, vecPath);
 
 	if ( bSolvedMaze )
 	{
@@ -248,26 +242,18 @@ int main(int argc, char* argv[])
 		deltaTime = pTimer->getElapsedTimeMilliSeconds();
 		std::cout << " and " << deltaTime << " ms to solve)" << std::endl;
 
-		for ( cGridMazeExplorer::sGridLocation cell : vecPath )
-		{
-//			std::cout << "(" << cell.row << ", " << cell.col << ") ";
-		}
-		
 		std::cout << std::endl;
 	
 		std::cout << "Maze with path:" << std::endl;
 		std::cout << pMazeExplorer->getMazeWithPathString(vecPath) << std::endl;
-
-
 	}
 	else
 	{
-		std::cout << "Made " << numberOfAttempsTaken << " attempts but didn't find an exit." << std::endl;
-//		std::cout << "This path hit a dead end." << std::endl;
+		std::cout << "Made " << numberOfDeadEndsFilled << " attempts but didn't find an exit." << std::endl;
 	}
 	
 	
-
+	return 0;
 
 
 //	MessageBox(NULL, "Hi", "Testing", MB_OK);

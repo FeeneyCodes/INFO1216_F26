@@ -376,7 +376,7 @@ void cVT100TerminalConsole::setTextBackground_Default(void)
     // 49 Background Default (Applies only the background portion of the defaults)
 
     std::stringstream ssTermSeq;
-    ssTermSeq << this->m_VT100_ESC << "[049m";
+    ssTermSeq << this->m_VT100_ESC << "[49m";
     printf(ssTermSeq.str().c_str());
 
     return;

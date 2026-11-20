@@ -211,10 +211,10 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	pVT->restoreTerminalMode();
-	// **********************************************************************
+	pVT->moveCursorToXY(1, mazeRows_Length + 2);
 
-	
+
+
 	
 	std::vector<cGridMazeExplorer::sGridLocation> vecPath;
 	//bool bSolvedMaze = pMazeExplorer->CreatePath( vecExits[0], vecExits[1], vecPath );
@@ -227,12 +227,12 @@ int main(int argc, char* argv[])
 	deltaTime = pTimer->getElapsedTimeMilliSeconds();
 	
 	std::cout << "Trying to solve the maze. Max attempts = " << MAX_NUMBER_OF_ATTEMPTS << std::endl;
-//	bool bSolvedMaze = pMazeExplorer->SolveMazeRandomPath( vecExits[0], vecExits[1],
-//	                                                       vecPath, numberOfAttempsTaken,
-//	                                                       MAX_NUMBER_OF_ATTEMPTS);
+	bool bSolvedMaze = pMazeExplorer->SolveMazeRandomPath( vecExits[0], vecExits[1],
+	                                                       vecPath, numberOfAttempsTaken,
+	                                                       MAX_NUMBER_OF_ATTEMPTS);
 
-	int numberOfDeadEndsFilled = 0;
-	bool bSolvedMaze = pMazeExplorer->SolveMazeDeadEndFilling(vecExits[0], vecExits[1], numberOfDeadEndsFilled, vecPath);
+	//int numberOfDeadEndsFilled = 0;
+	//bool bSolvedMaze = pMazeExplorer->SolveMazeDeadEndFilling(vecExits[0], vecExits[1], numberOfDeadEndsFilled, vecPath);
 
 	if ( bSolvedMaze )
 	{
@@ -244,15 +244,27 @@ int main(int argc, char* argv[])
 
 		std::cout << std::endl;
 	
-		std::cout << "Maze with path:" << std::endl;
-		std::cout << pMazeExplorer->getMazeWithPathString(vecPath) << std::endl;
+//		std::cout << "Maze with path:" << std::endl;
+//		std::cout << pMazeExplorer->getMazeWithPathString(vecPath) << std::endl;
+
+		for (cGridMazeExplorer::sGridLocation pathCell : vecPath)
+		{
+			pVT->moveCursorToXY(pathCell.col, pathCell.row);
+			pVT->setTextForeground(cVT100TerminalConsole::GREEN, false);
+			pVT->printBlackHappyFace();
+			pVT->setTextForeground_Default();
+		}
 	}
 	else
 	{
-		std::cout << "Made " << numberOfDeadEndsFilled << " attempts but didn't find an exit." << std::endl;
+		std::cout << "Made " << numberOfAttempsTaken << " attempts but didn't find an exit." << std::endl;
 	}
-	
-	
+
+	pVT->moveCursorToXY(1, mazeRows_Length + 2);
+
+
+	pVT->restoreTerminalMode();
+
 	return 0;
 
 

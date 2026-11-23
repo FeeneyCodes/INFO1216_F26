@@ -1,6 +1,9 @@
 #ifndef _cVT100TerminalConsole_HG_
 #define _cVT100TerminalConsole_HG_
 
+// Written by: Michael Feeney mfeeney (at) fanshawec (dot) ca 
+// November 2026
+// 
 // This is using Microsofts "virtual terminal" API
 // https://learn.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences
 

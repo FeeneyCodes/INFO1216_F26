@@ -1,7 +1,10 @@
 #pragma once
 
 // This code is a variation from: https://en.wikipedia.org/wiki/Mersenne_Twister#Alternatives
-
+//
+// Written by: Michael Feeney mfeeney (at) fanshawec (dot) ca 
+// November 2026
+//
 class cMersenneTwister
 {
 public:

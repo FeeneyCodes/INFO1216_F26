@@ -27,10 +27,13 @@
     <ClCompile Include="cMersenneTwister.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="threadTest_03_MazeSolve_inMemory.cpp">
+    <ClCompile Include="cVT100TerminalConsole.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="cVT100TerminalConsole.cpp">
+    <ClCompile Include="threadTest_04_MazeSolve_inMemory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cProcessMemoryCounters.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -48,6 +51,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="cVT100TerminalConsole.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cProcessMemoryCounters.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

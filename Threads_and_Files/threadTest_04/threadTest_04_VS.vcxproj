@@ -143,14 +143,16 @@
     <ClCompile Include="cHFTimer.cpp" />
     <ClCompile Include="cMazeMaker.cpp" />
     <ClCompile Include="cMersenneTwister.cpp" />
+    <ClCompile Include="cProcessMemoryCounters.cpp" />
     <ClCompile Include="cVT100TerminalConsole.cpp" />
-    <ClCompile Include="threadTest_03_MazeSolve_inMemory.cpp" />
+    <ClCompile Include="threadTest_04_MazeSolve_inMemory.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cGridMazeExplorer.h" />
     <ClInclude Include="cHFTimer.h" />
     <ClInclude Include="cMazeMaker.h" />
     <ClInclude Include="cMersenneTwister.h" />
+    <ClInclude Include="cProcessMemoryCounters.h" />
     <ClInclude Include="cVT100TerminalConsole.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

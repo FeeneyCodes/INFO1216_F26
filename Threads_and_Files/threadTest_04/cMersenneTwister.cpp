@@ -1,5 +1,8 @@
 #include "cMersenneTwister.h"
 
+// Written by: Michael Feeney mfeeney (at) fanshawec (dot) ca 
+// November 2026
+
 cMersenneTwister::cMersenneTwister(unsigned long seed)
 {
     this->m_initialize_state(seed);

@@ -3,6 +3,9 @@
 #include <io.h>
 #include <fcntl.h>
 
+// Written by: Michael Feeney mfeeney (at) fanshawec (dot) ca 
+// November 2026
+
 bool cVT100TerminalConsole::enableVirtualTerminalMode(void)
 {
     // Set output mode to handle virtual terminal sequences

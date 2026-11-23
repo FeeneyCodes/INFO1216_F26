@@ -1,6 +1,9 @@
 #ifndef _cGridMazeTraveller_HG_
 #define _cGridMazeTraveller_HG_
 
+// Written by: Michael Feeney mfeeney (at) fanshawec (dot) ca 
+// November 2026
+
 #include <string>
 #include <vector>
 #include "cMersenneTwister.h"

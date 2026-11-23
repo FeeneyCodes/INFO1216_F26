@@ -5,38 +5,64 @@
 #include <sstream>
 #include <fstream>
 #include <Windows.h>
+// For the "Process Memory Counters" (what task manager sees)
+#include "cProcessMemoryCounters.h"
 #include "cHFTimer.h"
 #include "cVT100TerminalConsole.h"
 
+// Written by: Michael Feeney mfeeney (at) fanshawec (dot) ca 
+// November 2026
 
 
-// We can pass anything to the thread, but it's common 
-//	to package what we are passing in a struct or class.
-// Like we could have just passed this string, but we
-//	will add other things that we want to give to the 
-//	thread function later.  
+// What we are passing to the thread as a paramater
 struct sTParams
 {
-	std::string Message;
+	// The number we assign the thread
+	int threadNumber = -1;
+	unsigned long threadRNGSeed = 0;
+	cMazeMaker* pTheMaze = NULL;	
+	cGridMazeExplorer* pMazeExplorer = NULL;
+	std::vector<cGridMazeExplorer::sGridLocation> vecExits;
+	// The soluton, if there is one
+	std::vector<cGridMazeExplorer::sGridLocation> vecPath;
+	// How many tries we'll take (maximum)
+	unsigned int maxNumberOfAttemptsToTry = 0;
+	// How many tries the solver actually did:
+	unsigned int numberOfAttemptsTaken = 0;
+	// To indicate that the thread had finished
+	bool bThreadIsDone = false;
+	bool bFoundAPath = false;
+	// Used to terminate the threads if needed
+	bool bTerminateYourself = false;
 };
 
-// This is the function that the thread will run
-// To be more general, it is passed a type "void*"
-//	called a "pointer to void" meaning it can be any type
-//	or that it is just a memory location, but with no specific
-//	type. 
-// The "catch" is that you have to be very careful casting it
-//	to something else because it will blindly trust you. 
-// 
-// Otherwise, this is just a regular function.
+// The thread function
 DWORD WINAPI ThreadProc( LPVOID lpParams)
 {
 	sTParams* pTheParams = (sTParams*)lpParams;
 	
-	std::cout << "Thread was passed " << pTheParams->Message << std::endl;
-	
-	pTheParams->Message = "Hello from the thread!";
-	
+	// Find and save the exits
+	std::vector<cGridMazeExplorer::sGridLocation> vecExits;
+	pTheParams->pMazeExplorer->FindExits(vecExits);
+
+	// Keep searching until we get through the maze
+	pTheParams->numberOfAttemptsTaken = 0;
+	pTheParams->bFoundAPath = false;
+	for (int count = 0; count < pTheParams->maxNumberOfAttemptsToTry; count++)
+	{
+		pTheParams->numberOfAttemptsTaken++;
+
+		if (pTheParams->pMazeExplorer->CreateRandomPath(vecExits[0], vecExits[1], pTheParams->vecPath))
+		{
+			// Found an exit
+			pTheParams->bFoundAPath = true;
+			break;
+		}
+	}//for (int count...
+
+	// All done my work
+	pTheParams->bThreadIsDone = true;
+
 	return 0;
 }
 
@@ -136,46 +162,14 @@ int main(int argc, char* argv[])
 			}
 		}
 	}
+
 	
-//	if ( bMazeFitsOnScreen )
-//	{
-//		std::cout << mazeAsString << std::endl;
-//	}
-	
+	// This "explorer" is just for the main, to get info about the maze
+	// (Each thread will be given its own 'explorer' later)
 	cGridMazeExplorer* pMazeExplorer = new cGridMazeExplorer(RNGseed);
 	
 	pMazeExplorer->SetMaze(mazeAsString, 'X', '.');
-	
-//	std::cout << "Rows: " << pMazeExplorer->getNumberOfRows_Length() << std::endl;
-//	std::cout << "Cols: " << pMazeExplorer->getNumberOfColumns_Width() << std::endl;
-	
 
-//	 std::cout << "Maze from Maze eplorer:" << std::endl;
-//	 for ( int row = 0; row < pMazeExplorer->getNumberOfRows_Length(); row++ )
-//	 {
-//		 for ( int col = 0; col < pMazeExplorer->getNumberOfColumns_Width(); col++ )
-//		 {
-//			 switch (pMazeExplorer->getGridCellType(row, col))
-//			 {
-//				 case cGridMazeExplorer::FLOOR:
-//					 std::cout << '.';
-//					 break;
-//				 case cGridMazeExplorer::WALL:
-//					 std::cout << 'X';
-//					 break;
-//				 case cGridMazeExplorer::UNKNOWN_TYPE:
-//					 std::cout << '?';
-//					 break;
-//				 case cGridMazeExplorer::INVALID_CELL:
-//					 std::cout << '^';
-//					 break;
-//				 default:
-//					 std::cout << 'V';
-//					 break;
-//			 }
-//		 }
-//		 std::cout << std::endl;
-//	 }
 	
 	cVT100TerminalConsole* pVT = new cVT100TerminalConsole();
 	pVT->enableVirtualTerminalMode();
@@ -183,8 +177,6 @@ int main(int argc, char* argv[])
 	if (bMazeFitsOnScreen)
 	{
 		// **********************************************************************
-
-
 		for (int row = 0; row < pMazeExplorer->getNumberOfRows_Length(); row++)
 		{
 			for (int col = 0; col < pMazeExplorer->getNumberOfColumns_Width(); col++)
@@ -205,123 +197,189 @@ int main(int argc, char* argv[])
 		}
 
 		pVT->moveCursorToXY(0, mazeRows_Length + 1);
+		// **********************************************************************
 	}//if (bMazeFitsOnScreen)
 
 
 
-	
-	std::vector<cGridMazeExplorer::sGridLocation> vecPath;
-	//bool bSolvedMaze = pMazeExplorer->CreatePath( vecExits[0], vecExits[1], vecPath );
+	// Create the number of threads to try to solve this maze
+	// This looks strange, but it is creating an array on the heap
+	//	instead of the stack.
+	//
+	// These are used just like "regular" arrays
+	//	pTParams[3] is the 4th element, etc.
+	// (Like arrays, they start at 0 up to numThreads-1)
+	// 
+	sTParams* pTParams = new sTParams[numThreads];
+	DWORD* pThreadIDs = new DWORD[numThreads];
+	HANDLE* pTHandles = new HANDLE[numThreads];
 
-	int numberOfAttempsTaken = 0;
-	//const int MAX_NUMBER_OF_ATTEMPTS = 10000000;
-	const int MAX_NUMBER_OF_ATTEMPTS = 0;
-	
 
-	
+	std::cout << "Creating " << numThreads << " threads...";
 
-	std::cout << "Trying to solve the ";
-	std::cout << pMazeExplorer->getNumberOfRows_Length() << "x" << pMazeExplorer->getNumberOfColumns_Width();
-	std::cout << " maze. Max attempts = " << MAX_NUMBER_OF_ATTEMPTS << std::endl;
-	//bool bSolvedMaze = pMazeExplorer->SolveMazeRandomPath( vecExits[0], vecExits[1],
-	//                                                       vecPath, numberOfAttempsTaken,
-	//                                                       MAX_NUMBER_OF_ATTEMPTS);
-	std::vector<cGridMazeExplorer::sGridLocation> vecExits;
-	if (pMazeExplorer->FindExits(vecExits))
+	// The random number generator is set up so that if we give it the same 
+	//	seed, they will all pick the same sequence of numbers. 
+	// Here, we are going to creat a RNG with the passed seed, then 
+	//	pick seeds for each Maze Explorer based on that common RNG
+	cMersenneTwister* pMainRNG = new cMersenneTwister(RNGseed);
+
+	// Make a maze explorer for each of our threads
+	for (unsigned int index = 0; index < numThreads; index++)
 	{
-		std::cout << "Found " << vecExits.size() << " exits at: ";
-		for (cGridMazeExplorer::sGridLocation cell : vecExits)
-		{
-			std::cout << "(" << cell.row << ", " << cell.col << ") ";
-		}
-		std::cout << std::endl;
+		pTParams[index].threadRNGSeed = pMainRNG->getNextRand();
+
+		cGridMazeExplorer* pMazeExplorer = new cGridMazeExplorer(pTParams[index].threadRNGSeed);
+		pMazeExplorer->SetMaze(mazeAsString, 'X', '.');
+
+		pTParams[index].maxNumberOfAttemptsToTry = 10000;
+
+		// Pass it to the parameters we are giving to the thread
+		pTParams[index].pMazeExplorer = pMazeExplorer;
+		// Give it the maze, too
+		pTParams[index].pTheMaze = pTheMaze;
+
+		// Create a suspended thread
+		pTHandles[index] = CreateThread(NULL,	// Security attribs (user or kernel mode, etc.)
+		                                0, 		// Stack size (0 = default stack size)
+		                                ThreadProc,					// Function thread runs
+		                                (void*)&(pTParams[index]),	// Pointer to the stuff we pass
+		                                CREATE_SUSPENDED,			// Creation params
+		                                &(pThreadIDs[index]));		// Pointer to threadID variable
 	}
+	std::cout << "done." << std::endl;
+	
+	std::cout << "Starting the " << numThreads << " threads." << std::endl;
+	std::cout.flush();
 
 	// Set the start time...
 	deltaTime = pTimer->getElapsedTimeMilliSeconds();
-	bool bSolvedMaze = pMazeExplorer->SolveMazeDeadEndFilling(vecExits[0], vecExits[1], numberOfAttempsTaken, vecPath);
+
+	for (unsigned int index = 0; index < numThreads; index++)
+	{
+		ResumeThread(pTHandles[index]);
+	}
+
+	// Now we check through the params we passed seeing if any thread has solved it
+	bool bPathFound = false;
+	bool bThreadsStillRunning = true;
+	//  Run if:
+	// - Threads are still running
+	//   AND
+	// - One thread hasn't found a path
+	while (bThreadsStillRunning && !bPathFound)
+	{
+		// Assume they are all done
+		bThreadsStillRunning = false;
+
+		for (unsigned int index = 0; index < numThreads; index++)
+		{
+			if (pTParams[index].bFoundAPath)
+			{
+				// At least one thread has found a path
+				bPathFound = true;
+			}
+			if (!pTParams[index].bThreadIsDone)
+			{
+				// At least one thread is still running
+				bThreadsStillRunning = true;
+			}
+			// This releases control over this main thread
+			// (You could also call Sleep(1) to wait approx 1 ms)
+			Sleep(0);
+		}
+	}
+
+	// At this point, either:
+	// - At least one thread found a path 
+	// OR
+	// - ALL the threads exited NOT finding a path
+
 	deltaTime = pTimer->getElapsedTimeMicroSeconds();
 	std::string elapsedTimeString = pTimer->getElapsedTimeAppropriateDurationString(deltaTime);
-	
 
-	if ( bSolvedMaze )
+	// Anyone find a path?
+	int threadIDThatFoundAPath = -1;
+	for (int index = 0; index < numThreads; index++)
 	{
-		if (bMazeFitsOnScreen)
+		if (!pTParams[index].bFoundAPath)
 		{
-			// Place path on maze we drew earlier
-			for (cGridMazeExplorer::sGridLocation pathCell : vecPath)
-			{
-				pVT->moveCursorToXY(pathCell.col, pathCell.row);
-				pVT->setTextForeground(cVT100TerminalConsole::GREEN, false);
-				pVT->printBlackHappyFace();
-				pVT->setTextForeground_Default();
-			}
-			// put terminal cursor at bottom of maze (so later couts don't write over maze)
-			pVT->moveCursorToXY(0, pMazeExplorer->getNumberOfRows_Length() + 2);
-		}//if (bMazeFitsOnScreen)
-
-		std::cout << "This path exits the maze! ";
-		std::cout << "(took " << numberOfAttempsTaken << " attempts";
-		
-		std::cout << " and " << elapsedTimeString << " (" << deltaTime << " us) to solve)" << std::endl;
-		// Save maze and path to file
-		std::string mazeFileWithPathFileName = mazeFileName + "_withPath.txt";
-		std::ofstream mazeFileFilePath(mazeFileWithPathFileName);
-		std::cout << "Saving maze with path to " << mazeFileWithPathFileName << std::endl;
-		mazeFileFilePath << "Maze with path:" << std::endl;
-		mazeFileFilePath << pMazeExplorer->getMazeWithPathString(vecPath, 'X', ' ', '+') << std::endl;
-		mazeFileFilePath.close();
-
+			// Yup
+			threadIDThatFoundAPath = index;
+			break;
+		}
 	}
-	else
+
+	if (threadIDThatFoundAPath < 0)
 	{
-		std::cout << "Made " << numberOfAttempsTaken << " attempts but didn't find an exit." << std::endl;
+		// Nope. 
+		std::cout << "ALl the threads exited and none found a path." << std::endl;
+		return -1;
 	}
 
-	std::cout << std::endl;
-
-	return 0;
-
-
-//	MessageBox(NULL, "Hi", "Testing", MB_OK);
-	
-	// Create one of the things to pass to the thread
-	sTParams tParams;	
-	tParams.Message = "Hey from main()!";
-	
-	// This is an optional "ID" for the thread. 
-	// 	we can get information about the thread from this.
-	// (or we can ignore it)
-	// A "DWORD" is a "double word" or a 32 bit number 
-	// (A "word" = 2 bytes, or 16 bits)
-	DWORD threadId = 0;
-	
-	// The "handle" is a unique number for this thread "object".
-	// It's what we can talk to the operating system about when 
-	//	referring to this thread. 
-	// It doubles as an error return value. 
-	//	If it returns NULL (0), then there was a problem.
-//	HANDLE tHandle = CreateThread( NULL, 
-//	                               0, 				// Stack size
-//								   ThreadProc,		// Function thread runs
-//								   (void*)&tParams,	// Pointer to the stuff we pass
-//								   CREATE_SUSPENDED,// Creation params
-//								   &threadId);		// Pointer to threadID variable
-//
-//	std::cout << "Thread created (threadID = " << threadId << ")" << std::endl;
-//	std::cout << "Starting thread then sleeping for 1 second..." << std::endl;
-//
-//	ResumeThread(tHandle);
-	// Suspend this main() thread for 1000 ms (or 1 second)
-	// 	to give the thread time to start and run.
-	// The thread runs then exits so will return long before
-	//	this 1 second has elapsed.
-//	Sleep(1000);
-//	
-//	std::cout << "Thread returned " << tParams.Message << std::endl;
+	// At this point, threadIDThatFoundAPath thread found a path through the maze
+	std::cout << "Thread # " << threadIDThatFoundAPath << " found a path";
+	std::cout << " in " << elapsedTimeString << " (" << deltaTime << " us)";
+	std::cout << " taking " << pTParams[threadIDThatFoundAPath].numberOfAttemptsTaken << " tries." << std::endl;
 
 
+	std::cout << "Do you want to see the solution? (Y/N)" << std::endl;
+	bool bShowMazeAndSolution = false;
+	std::string answer;
+	std::cin >> answer;
+	if (answer.length() > 0)
+	{
+		if (answer[0] == 'Y' || answer[0] == 'y')
+		{
+			bShowMazeAndSolution = true;
+		}
+	}
 
+	if (!bShowMazeAndSolution)
+	{
+		return 0;
+	}
+
+	// Show the maze and solution
+	// **********************************************************************
+	// Draw maze...
+	for (int row = 0; row < pMazeExplorer->getNumberOfRows_Length(); row++)
+	{
+		for (int col = 0; col < pMazeExplorer->getNumberOfColumns_Width(); col++)
+		{
+			pVT->moveCursorToXY(col, row);
+			cGridMazeExplorer::eCellType cellType = pMazeExplorer->getGridCellType(row, col);
+			//char cellChar = pMazeExplorer->getCellTypeAsChar(cellType);
+			//pVT->printCharAtXY(cellChar, col, row);
+			if (cellType == cGridMazeExplorer::WALL)
+			{
+				pVT->printDECLineSymbol(cVT100TerminalConsole::CHECKERBOARD_STIPPLE_SHADE);
+			}
+			else
+			{
+				printf(" ");
+			}
+		}
+	}//for (int row...
+	// **********************************************************************
+	// Draw path through maze...
+	for (cGridMazeExplorer::sGridLocation pathCell : pTParams[threadIDThatFoundAPath].vecPath)
+	{
+		pVT->moveCursorToXY(pathCell.col, pathCell.row);
+		pVT->setTextForeground(cVT100TerminalConsole::GREEN, false);
+		pVT->printBlackHappyFace();
+		pVT->setTextForeground_Default();
+	}
+	// put terminal cursor at bottom of maze (so later couts don't write over maze)
+	pVT->moveCursorToXY(0, pMazeExplorer->getNumberOfRows_Length() + 2);
+
+	// **********************************************************************
+
+	cProcessMemoryCounters* pPMC = new cProcessMemoryCounters();
+	std::ofstream PMCInfoFile("PMCInfo.txt");
+	PMCInfoFile << pPMC->getCounterSummaryString() << std::endl;
+	PMCInfoFile.close();
+
+	// TODO: Delete the things created by the threads
 	delete pMazeExplorer;
 	delete pTheMaze;
 

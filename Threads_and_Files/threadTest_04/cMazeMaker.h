@@ -17,7 +17,7 @@
 class cMazeMaker
 {
 public:
-	cMazeMaker(int seed = 0);
+	cMazeMaker(unsigned long seed = 0);
 	~cMazeMaker();
 	bool GenerateMaze(unsigned int width, unsigned int height);
 	void PrintMaze(void);

@@ -31,7 +31,7 @@
 class cGridMazeExplorer
 {
 public:
-	cGridMazeExplorer();
+	cGridMazeExplorer(unsigned long seed = 0);
 	~cGridMazeExplorer();
 	
 	// Takes entire maze like above, as one string with CR-LF at end
@@ -77,24 +77,40 @@ public:
 	// Returns false if:
 	// - didn't make it to the exit
 	// - start or exit is a wall tile
-	bool CreatePath(sGridLocation start, sGridLocation end, 
-	                std::vector<sGridLocation> &vecPath);
-	bool CreatePath(int start_row, int start_col, int end_row, int end_col, 
-	                std::vector<sGridLocation> &vecPath);
+	bool CreateRandomPath(sGridLocation start, sGridLocation end,
+	                      std::vector<sGridLocation> &vecPath);
+	bool CreateRandomPath(int start_row, int start_col, int end_row, int end_col,
+	                      std::vector<sGridLocation> &vecPath);
 
 	// Will keep calling CreatePath until it gets from start to end
-	bool SolveMaze(sGridLocation start, sGridLocation end, 
-	               std::vector<sGridLocation> &vecPath,
-				   int &numberOfAttempts, 
-				   int maxNumberOfAttempts = 1000);
+	// Passing 0 as maxNumberOfAttempts = run forever
+	bool SolveMazeRandomPath(sGridLocation start, sGridLocation end, 
+	                         std::vector<sGridLocation> &vecPath,
+	                         int &numberOfAttempts, 
+	                         int maxNumberOfAttempts = 1000);
 				   
-	bool SolveMaze(int start_row, int start_col, int end_row, int end_col, 
-	               std::vector<sGridLocation> &vecPath,
-				   int &numberOfAttemps,
-				   int maxNumberOfAttempts = 1000);
+	bool SolveMazeRandomPath(int start_row, int start_col, int end_row, int end_col,
+	                         std::vector<sGridLocation> &vecPath,
+	                         int &numberOfAttemps,
+	                         int maxNumberOfAttempts = 1000);
+
+	// This fills all the dead ends until there's only either one (or more)
+	//	valid paths through the maze, or there's no valid path.
+	// Returns true if there's a path. 
+	bool SolveMazeDeadEndFilling(sGridLocation start, sGridLocation end,
+	                             int &numberOfDeadEndsFilled, 
+	                             std::vector<sGridLocation>& vecPath);
+
+	bool SolveMazeDeadEndFilling(int start_row, int start_col, int end_row, int end_col,
+	                             int& numberOfDeadEndsFilled,
+	                             std::vector<sGridLocation>& vecPath);
+
 
 	// For printing the maze WITH the path
-	std::string getMazeWithPathString(std::vector<sGridLocation> &vecPath, char pathCharacter = '@');
+	std::string getMazeWithPathString(std::vector<sGridLocation> &vecPath, 
+	                                  char wallCharacter = 'X', 
+	                                  char floorCharacter = ' ', 
+	                                  char pathCharacter = '@');
 
 					
 	// Converts the direction enums to characters (for printing or whatever)
@@ -133,6 +149,16 @@ private:
 	// Returns false if there's no "next valid cell"
 	// Doesn't pick from previous cell (where it came from)
 	bool m_PickNextValidCell(std::vector<sGridLocation> &vecPathSoFar);
+	// Same as above, but this one can be passed a copy of the maze
+	// (used when the maze is being solved)
+	bool m_PickNextValidCell(std::vector<std::vector<eCellType>> &vecTempMaze, std::vector<sGridLocation> &vecPathSoFar);
+
+	// Used by: SolveMazeRecursive()
+	bool m_bIsCellInMaze(sGridLocation cellRowCol);
+	bool m_bFindValidNextCell(int& row, int& col, std::vector<std::vector<bool>>& vecMazeCellVisited);
+
+	// Used by: SolveMazeDeadEndFilling()
+	bool m_bIsCellADeadEnd(sGridLocation cellRowCol);
 };
 	
 #endif //_cGridMazeTraveller_HG_

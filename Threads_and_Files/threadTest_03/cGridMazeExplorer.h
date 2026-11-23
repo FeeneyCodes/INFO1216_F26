@@ -107,7 +107,10 @@ public:
 
 
 	// For printing the maze WITH the path
-	std::string getMazeWithPathString(std::vector<sGridLocation> &vecPath, char pathCharacter = '@');
+	std::string getMazeWithPathString(std::vector<sGridLocation> &vecPath, 
+	                                  char wallCharacter = 'X', 
+	                                  char floorCharacter = ' ', 
+	                                  char pathCharacter = '@');
 
 					
 	// Converts the direction enums to characters (for printing or whatever)
@@ -146,6 +149,9 @@ private:
 	// Returns false if there's no "next valid cell"
 	// Doesn't pick from previous cell (where it came from)
 	bool m_PickNextValidCell(std::vector<sGridLocation> &vecPathSoFar);
+	// Same as above, but this one can be passed a copy of the maze
+	// (used when the maze is being solved)
+	bool m_PickNextValidCell(std::vector<std::vector<eCellType>> &vecTempMaze, std::vector<sGridLocation> &vecPathSoFar);
 
 	// Used by: SolveMazeRecursive()
 	bool m_bIsCellInMaze(sGridLocation cellRowCol);

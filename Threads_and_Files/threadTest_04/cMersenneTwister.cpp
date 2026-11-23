@@ -12,7 +12,11 @@ unsigned long cMersenneTwister::getNextRand(void)
 
 unsigned long cMersenneTwister::getRandBetween(unsigned int lowest, unsigned int highest)
 {
-    return (this->getNextRand() % (highest - lowest)) + lowest;
+    unsigned long theRand = this->getNextRand();
+    unsigned long range = highest - lowest;
+    unsigned long randInRange = theRand % range;
+    randInRange -= lowest;
+    return randInRange;
 }
 
 void cMersenneTwister::m_initialize_state(/*s_mt_state* state, */unsigned long seed)

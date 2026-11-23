@@ -65,6 +65,7 @@ int main(int argc, char* argv[])
 		numThreads = (unsigned long)atol(argv[1]);
 		mazeColumns_Width = (unsigned long)atol(argv[2]);
 		mazeRows_Length = (unsigned long)atol(argv[3]);
+		mazeFileName.clear();
 		mazeFileName.append(argv[4]);
 		RNGseed = (unsigned long)atol(argv[5]);
 	}
@@ -176,42 +177,35 @@ int main(int argc, char* argv[])
 //		 std::cout << std::endl;
 //	 }
 	
-	std::vector<cGridMazeExplorer::sGridLocation> vecExits;
-	if ( pMazeExplorer->FindExits(vecExits) )
-	{
-		std::cout << vecExits.size() << " exits:" << std::endl;
-		for ( cGridMazeExplorer::sGridLocation cell : vecExits )
-		{
-			std::cout << "at (" << cell.row << ", " << cell.col << ")" << std::endl;
-		}
-	}
-	
-
-	// **********************************************************************
 	cVT100TerminalConsole* pVT = new cVT100TerminalConsole();
 	pVT->enableVirtualTerminalMode();
 
-
-	for (int row = 0; row < pMazeExplorer->getNumberOfRows_Length(); row++)
+	if (bMazeFitsOnScreen)
 	{
-		for (int col = 0; col < pMazeExplorer->getNumberOfColumns_Width(); col++)
+		// **********************************************************************
+
+
+		for (int row = 0; row < pMazeExplorer->getNumberOfRows_Length(); row++)
 		{
-			pVT->moveCursorToXY(col, row);
-			cGridMazeExplorer::eCellType cellType = pMazeExplorer->getGridCellType(row, col);
-			//char cellChar = pMazeExplorer->getCellTypeAsChar(cellType);
-			//pVT->printCharAtXY(cellChar, col, row);
-			if (cellType == cGridMazeExplorer::WALL)
+			for (int col = 0; col < pMazeExplorer->getNumberOfColumns_Width(); col++)
 			{
-				pVT->printDECLineSymbol(cVT100TerminalConsole::CHECKERBOARD_STIPPLE_SHADE);
-			}
-			else
-			{
-				printf(" ");
+				pVT->moveCursorToXY(col, row);
+				cGridMazeExplorer::eCellType cellType = pMazeExplorer->getGridCellType(row, col);
+				//char cellChar = pMazeExplorer->getCellTypeAsChar(cellType);
+				//pVT->printCharAtXY(cellChar, col, row);
+				if (cellType == cGridMazeExplorer::WALL)
+				{
+					pVT->printDECLineSymbol(cVT100TerminalConsole::CHECKERBOARD_STIPPLE_SHADE);
+				}
+				else
+				{
+					printf(" ");
+				}
 			}
 		}
-	}
 
-	pVT->moveCursorToXY(1, mazeRows_Length + 2);
+		pVT->moveCursorToXY(0, mazeRows_Length + 1);
+	}//if (bMazeFitsOnScreen)
 
 
 
@@ -223,47 +217,68 @@ int main(int argc, char* argv[])
 	//const int MAX_NUMBER_OF_ATTEMPTS = 10000000;
 	const int MAX_NUMBER_OF_ATTEMPTS = 0;
 	
+
+	
+
+	std::cout << "Trying to solve the ";
+	std::cout << pMazeExplorer->getNumberOfRows_Length() << "x" << pMazeExplorer->getNumberOfColumns_Width();
+	std::cout << " maze. Max attempts = " << MAX_NUMBER_OF_ATTEMPTS << std::endl;
+	//bool bSolvedMaze = pMazeExplorer->SolveMazeRandomPath( vecExits[0], vecExits[1],
+	//                                                       vecPath, numberOfAttempsTaken,
+	//                                                       MAX_NUMBER_OF_ATTEMPTS);
+	std::vector<cGridMazeExplorer::sGridLocation> vecExits;
+	if (pMazeExplorer->FindExits(vecExits))
+	{
+		std::cout << "Found " << vecExits.size() << " exits at: ";
+		for (cGridMazeExplorer::sGridLocation cell : vecExits)
+		{
+			std::cout << "(" << cell.row << ", " << cell.col << ") ";
+		}
+		std::cout << std::endl;
+	}
+
 	// Set the start time...
 	deltaTime = pTimer->getElapsedTimeMilliSeconds();
+	bool bSolvedMaze = pMazeExplorer->SolveMazeDeadEndFilling(vecExits[0], vecExits[1], numberOfAttempsTaken, vecPath);
+	deltaTime = pTimer->getElapsedTimeMicroSeconds();
+	std::string elapsedTimeString = pTimer->getElapsedTimeAppropriateDurationString(deltaTime);
 	
-	std::cout << "Trying to solve the maze. Max attempts = " << MAX_NUMBER_OF_ATTEMPTS << std::endl;
-	bool bSolvedMaze = pMazeExplorer->SolveMazeRandomPath( vecExits[0], vecExits[1],
-	                                                       vecPath, numberOfAttempsTaken,
-	                                                       MAX_NUMBER_OF_ATTEMPTS);
-
-	//int numberOfDeadEndsFilled = 0;
-	//bool bSolvedMaze = pMazeExplorer->SolveMazeDeadEndFilling(vecExits[0], vecExits[1], numberOfDeadEndsFilled, vecPath);
 
 	if ( bSolvedMaze )
 	{
-		std::cout << "This path exits the maze!" << std::endl;
-		std::cout << "(took " << numberOfAttempsTaken << " attempts " << std::endl;
-		
-		deltaTime = pTimer->getElapsedTimeMilliSeconds();
-		std::cout << " and " << deltaTime << " ms to solve)" << std::endl;
-
-		std::cout << std::endl;
-	
-//		std::cout << "Maze with path:" << std::endl;
-//		std::cout << pMazeExplorer->getMazeWithPathString(vecPath) << std::endl;
-
-		for (cGridMazeExplorer::sGridLocation pathCell : vecPath)
+		if (bMazeFitsOnScreen)
 		{
-			pVT->moveCursorToXY(pathCell.col, pathCell.row);
-			pVT->setTextForeground(cVT100TerminalConsole::GREEN, false);
-			pVT->printBlackHappyFace();
-			pVT->setTextForeground_Default();
-		}
+			// Place path on maze we drew earlier
+			for (cGridMazeExplorer::sGridLocation pathCell : vecPath)
+			{
+				pVT->moveCursorToXY(pathCell.col, pathCell.row);
+				pVT->setTextForeground(cVT100TerminalConsole::GREEN, false);
+				pVT->printBlackHappyFace();
+				pVT->setTextForeground_Default();
+			}
+			// put terminal cursor at bottom of maze (so later couts don't write over maze)
+			pVT->moveCursorToXY(0, pMazeExplorer->getNumberOfRows_Length() + 2);
+		}//if (bMazeFitsOnScreen)
+
+		std::cout << "This path exits the maze! ";
+		std::cout << "(took " << numberOfAttempsTaken << " attempts";
+		
+		std::cout << " and " << elapsedTimeString << " (" << deltaTime << " us) to solve)" << std::endl;
+		// Save maze and path to file
+		std::string mazeFileWithPathFileName = mazeFileName + "_withPath.txt";
+		std::ofstream mazeFileFilePath(mazeFileWithPathFileName);
+		std::cout << "Saving maze with path to " << mazeFileWithPathFileName << std::endl;
+		mazeFileFilePath << "Maze with path:" << std::endl;
+		mazeFileFilePath << pMazeExplorer->getMazeWithPathString(vecPath, 'X', ' ', '+') << std::endl;
+		mazeFileFilePath.close();
+
 	}
 	else
 	{
 		std::cout << "Made " << numberOfAttempsTaken << " attempts but didn't find an exit." << std::endl;
 	}
 
-	pVT->moveCursorToXY(1, mazeRows_Length + 2);
-
-
-	pVT->restoreTerminalMode();
+	std::cout << std::endl;
 
 	return 0;
 

@@ -3,7 +3,7 @@
 #include <fstream>
 #include <sstream>
 
-cMazeMaker::cMazeMaker(int seed)
+cMazeMaker::cMazeMaker(unsigned long seed)
 {
 
 	this->m_pRandom = new cMersenneTwister(seed);
@@ -413,10 +413,10 @@ void cMazeMaker::m_randomPoint(bool part)
 
 	if (!part)
 	{
-		axis = rand() % 2;
-		side = rand() % 2;
-		//axis = (int)this->m_pRandom->getNextRand() % 2;	// = rand() % 2;
-		//side = (int)this->m_pRandom->getNextRand() % 2;	// = rand() % 2;
+		//axis = rand() % 2;
+		//side = rand() % 2;
+		axis = (int)this->m_pRandom->getRandBetween(0, 2);	// = rand() % 2;
+		side = (int)this->m_pRandom->getRandBetween(0, 2);	// = rand() % 2;
 
 
 		this->m_start_axis = axis;
@@ -428,10 +428,10 @@ void cMazeMaker::m_randomPoint(bool part)
 
 		while (!done)
 		{
-			axis = rand() % 2;
-			side = rand() % 2;
-			//axis = (int)this->m_pRandom->getNextRand() % 2;	// = rand() % 2;
-			//side = (int)this->m_pRandom->getNextRand() % 2;	// = rand() % 2;
+			//axis = rand() % 2;
+			//side = rand() % 2;
+			axis = (int)this->m_pRandom->getRandBetween(0, 2);	// = rand() % 2;
+			side = (int)this->m_pRandom->getRandBetween(0, 2);	// = rand() % 2;
 
 
 			if (axis != this->m_start_axis ||
@@ -453,8 +453,10 @@ void cMazeMaker::m_randomPoint(bool part)
 		location[!axis] = this->m_maze_size[!axis] - 1;
 	}
 
-	location[axis] = 2 * (rand() % ((this->m_maze_size[axis] + 1) / 2 - 2)) + 1;
-	//location[axis] = 2 * ((int)this->m_pRandom->getNextRand() % ((this->m_maze_size[axis] + 1) / 2 - 2)) + 1;
+//	location[axis] = 2 * (rand() % ((this->m_maze_size[axis] + 1) / 2 - 2)) + 1;
+
+	int theRange = ((this->m_maze_size[axis] + 1) / 2 - 2);
+	location[axis] = 2 * ((int)this->m_pRandom->getRandBetween(0, theRange)) + 1;
 
 	if (!part)
 	{

@@ -114,7 +114,7 @@ void cVT100TerminalConsole::setTextFormat_Bold(bool bEnable)
     ssTermSeq << this->m_VT100_ESC << '[';
     // 1	Bold / Bright	Applies brightness / intensity flag to foreground color
     // 22	No bold / bright	Removes brightness / intensity flag from foreground color
-    ssTermSeq << (bEnable ? '1' : '22');
+    ssTermSeq << (bEnable ? "1" : "22");
     ssTermSeq << 'm';    
     printf(ssTermSeq.str().c_str());
 
@@ -132,7 +132,7 @@ void cVT100TerminalConsole::setTextForamt_Underline(bool bEnable)
     ssTermSeq << this->m_VT100_ESC << '[';
     //    4	Underline	Adds underline
     //    24	No underline	Removes underline
-    ssTermSeq << (bEnable ? '4' : '24');
+    ssTermSeq << (bEnable ? "4" : "24");
     ssTermSeq << 'm';
     printf(ssTermSeq.str().c_str());
 
@@ -148,7 +148,7 @@ void cVT100TerminalConsole::setTextFormat_Negative(bool bEnable)
     ssTermSeq << this->m_VT100_ESC << '[';
     //    7	Negative	Swaps foreground and background colors
     //    27	Positive(No negative)	Returns foreground / background to normal
-    ssTermSeq << (bEnable ? '7' : '27');
+    ssTermSeq << (bEnable ? "7" : "27");
     ssTermSeq << 'm';
     printf(ssTermSeq.str().c_str());
 

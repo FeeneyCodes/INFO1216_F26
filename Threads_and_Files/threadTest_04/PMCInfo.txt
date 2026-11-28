@@ -1,13 +1,13 @@
-Page Fault Count: 1891
-Peak Working Set Size: 7344128 bytes
-Working Set Size: 7073792 bytes
-Quota Peak Paged Pool Usage: 36288 bytes
-Quota Paged Pool Usage: 34440 bytes
-Quota PeakNon Paged Pool Usage: 6296 bytes
+Page Fault Count: 1568
+Peak Working Set Size: 6127616 bytes
+Working Set Size: 6037504 bytes
+Quota Peak Paged Pool Usage: 47248 bytes
+Quota Paged Pool Usage: 46992 bytes
+Quota PeakNon Paged Pool Usage: 6936 bytes
 Quota Non Paged Pool Usage: 5720 bytes
-Pagefile Usage (Commit Charge): 2023424 bytes
-Peak Pagefile Usage: 2330624 bytes
-Private Usage (Commit Charge): 2023424 bytes
-Private Working Set Size: 1585152 bytes
-Shared Commit Usage: 548864 bytes
+Pagefile Usage (Commit Charge): 1773568 bytes
+Peak Pagefile Usage: 2035712 bytes
+Private Usage (Commit Charge): 1773568 bytes
+Private Working Set Size: 1302528 bytes
+Shared Commit Usage: 659456 bytes
 

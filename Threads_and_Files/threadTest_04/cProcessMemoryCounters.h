@@ -9,7 +9,7 @@
 // https://learn.microsoft.com/en-us/windows/win32/api/psapi/ns-psapi-process_memory_counters_ex2
 // 
 
-#include <Psapi.h>	
+#include <psapi.h>	
 
 class cProcessMemoryCounters
 {
@@ -55,6 +55,27 @@ public:
 
 	std::string getCounterSummaryString(void);
 private:
+
+#if !defined(PROCESS_MEMORY_COUNTERS_EX2)
+	// g++ may not see this updated struct for some reason. 
+	// (not sure why)
+	typedef struct _PROCESS_MEMORY_COUNTERS_EX2 {
+		DWORD   cb;
+		DWORD   PageFaultCount;
+		SIZE_T  PeakWorkingSetSize;
+		SIZE_T  WorkingSetSize;
+		SIZE_T  QuotaPeakPagedPoolUsage;
+		SIZE_T  QuotaPagedPoolUsage;
+		SIZE_T  QuotaPeakNonPagedPoolUsage;
+		SIZE_T  QuotaNonPagedPoolUsage;
+		SIZE_T  PagefileUsage;
+		SIZE_T  PeakPagefileUsage;
+		SIZE_T  PrivateUsage;
+		SIZE_T  PrivateWorkingSetSize;
+		ULONG64 SharedCommitUsage;
+	} PROCESS_MEMORY_COUNTERS_EX2, * PPROCESS_MEMORY_COUNTERS_EX2;
+#endif
+
 	PROCESS_MEMORY_COUNTERS_EX2 m_PMCInfo;
 
 	bool m_bDataIsValid = false;

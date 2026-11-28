@@ -48,7 +48,7 @@ DWORD WINAPI ThreadProc( LPVOID lpParams)
 	// Keep searching until we get through the maze
 	pTheParams->numberOfAttemptsTaken = 0;
 	pTheParams->bFoundAPath = false;
-	for (int count = 0; count < pTheParams->maxNumberOfAttemptsToTry; count++)
+	for (unsigned int count = 0; count < pTheParams->maxNumberOfAttemptsToTry; count++)
 	{
 		pTheParams->numberOfAttemptsTaken++;
 
@@ -299,7 +299,7 @@ int main(int argc, char* argv[])
 
 	// Anyone find a path?
 	int threadIDThatFoundAPath = -1;
-	for (int index = 0; index < numThreads; index++)
+	for (unsigned int index = 0; index < numThreads; index++)
 	{
 		if (!pTParams[index].bFoundAPath)
 		{

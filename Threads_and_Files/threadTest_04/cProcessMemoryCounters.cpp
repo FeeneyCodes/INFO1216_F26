@@ -32,11 +32,11 @@ bool cProcessMemoryCounters::UpdateMemoryCounterInfo(void)
 		// Get this error in human readable text
 		LPWSTR lpBufferText = 0;
 
-		DWORD bufferSize = FormatMessage( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,	// DWORD dwFlags,
+		DWORD bufferSize = FormatMessageA( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,	// DWORD dwFlags,
 		                                  0,						// [in, optional] LPCVOID lpSource (ignored with Message_From_System)
 		                                  this->m_lastErrorCode,	// [in] DWORD dwMessageId
 		                                  MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),	// [in] DWORD dwLanguageId (0 = don't care or built in)
-		                                  (LPWSTR)&lpBufferText,	// [out] LPCVOID lpSource
+		                                  (LPSTR)&lpBufferText,	// [out] LPCVOID lpSource
 		                                  0,						// [in] DWORD nSize (0 = allocated by system)
 		                                  NULL);					// [in, optional] va_list* Arguments
 		if (bufferSize == 0)
